@@ -5,54 +5,58 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "sha3/sph_jh.h"
+
+#include "sha3/sph_blake.h"
+// #include "sha3/sph_jh.h"
 #include "sha3/sph_keccak.h"
 #include "sha3/sph_cubehash.h"
 #include "sha3/sph_whirlpool.h"
-#include "sha3/sph_sha2.h"
-#include "sha3/sph_tiger.h"
+#include "sha3/sph_luffa.h"
+#include "sha3/sph_echo.h"
+// #include "sha3/sph_sha2.h"
+// #include "sha3/sph_tiger.h"
 
 void x11hash(void *output, const void *input)
 {
-    sph_jh512_context        ctx_jh;
-    sph_keccak512_context    ctx_keccak;
-    sph_cubehash512_context  ctx_cubehash;
+	sph_blake512_context     ctx_blake;
+	sph_keccak512_context    ctx_keccak;
+	sph_cubehash512_context		ctx_cubehash1;
+    sph_echo512_context      ctx_echo;
     sph_whirlpool_context    ctx_whirlpool;
-    sph_sha512_context       ctx_sha512;
-    sph_tiger_context        ctx_tiger;
+    sph_luffa512_context     ctx_luffa;
 
-    // These uint512 in the C++ source of the client are backed by an array of uint32
-    uint32_t _ALIGN(64) hashA[16], hashB[16];
+	//these uint512 in the c++ source of the client are backed by an array of uint32
+	uint32_t _ALIGN(64) hashA[16], hashB[16];
 
-    sph_jh512_init(&ctx_jh);
-    sph_jh512(&ctx_jh, input, 80);
-    sph_jh512_close(&ctx_jh, hashA);
+	sph_blake512_init(&ctx_blake);
+	sph_blake512 (&ctx_blake, input, 80);
+	sph_blake512_close (&ctx_blake, hashA);
 
-    sph_keccak512_init(&ctx_keccak);
-    sph_keccak512(&ctx_keccak, hashA, 64);
-    sph_keccak512_close(&ctx_keccak, hashB);
+	sph_keccak512_init(&ctx_keccak);
+	sph_keccak512 (&ctx_keccak, hashA, 64);
+	sph_keccak512_close(&ctx_keccak, hashB);
 
-    sph_cubehash512_init(&ctx_cubehash);
-    sph_cubehash512(&ctx_cubehash, hashB, 64);
-    sph_cubehash512_close(&ctx_cubehash, hashA);
+	sph_cubehash512_init (&ctx_cubehash1);
+	sph_cubehash512 (&ctx_cubehash1, hashB, 64);
+	sph_cubehash512_close(&ctx_cubehash1, hashA);
+
+    sph_echo512_init (&ctx_echo); 
+    sph_echo512 (&ctx_echo, hashA, 64);   
+    sph_echo512_close(&ctx_echo, hashB); 
 
     sph_whirlpool_init(&ctx_whirlpool);
-    sph_whirlpool(&ctx_whirlpool, hashA, 64);
-    sph_whirlpool_close(&ctx_whirlpool, hashB);
+    sph_whirlpool(&ctx_whirlpool, hashB, 64);
+    sph_whirlpool_close(&ctx_whirlpool, hashA);
 
-    sph_sha512_init(&ctx_sha512);
-    sph_sha512(&ctx_sha512, hashB, 64);
-    sph_sha512_close(&ctx_sha512, hashA);
+	sph_luffa512_init(&ctx_luffa);
+	sph_luffa512(&ctx_luffa, hashA, 64);
+	sph_luffa512_close(&ctx_luffa, hashB);
 
-    sph_tiger_init(&ctx_tiger);
-    sph_tiger(&ctx_tiger, hashA, 64);
-    sph_tiger_close(&ctx_tiger, hashB);
+    sph_keccak512_init(&ctx_keccak);
+    sph_keccak512(&ctx_keccak, hashB, 64);
+    sph_keccak512_close(&ctx_keccak, hashA);
 
-    sph_sha512_init(&ctx_sha512);
-    sph_sha512(&ctx_sha512, hashB, 64);
-    sph_sha512_close(&ctx_sha512, hashA);
-
-    memcpy(output, hashA, 32);
+	memcpy(output, hashA, 32);
 }
 
 int scanhash_x11(int thr_id, struct work *work, uint32_t max_nonce, uint64_t *hashes_done)
